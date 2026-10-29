@@ -1,0 +1,54 @@
+services:
+  acpdb:
+    image: mysql:9.7
+    container_name: acpdb
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_DATABASE: db_taller
+    ports:
+      - 3307:3306
+    volumes:
+      - ./DB_Dump:/docker-entrypoint-initdb.d:ro
+      - acpdb_data:/var/lib/mysql
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -h localhost -uroot -p\"$$(cat /run/secrets/db_password)\" -e 'SELECT 1' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  acpdatos:
+    container_name: acpdatos
+    volumes:
+      - ./Data/public:/var/www/html/public
+      - ./Data/src:/var/www/html/src
+    build:
+      context: .
+      dockerfile: ./Data/Dockerfile
+    depends_on:
+      acpdb:
+        condition: service_healthy
+    ports:
+      - 8080:80
+
+  acpnegocio:
+    container_name: acpnegocio
+    volumes:
+      - ./Business/public:/var/www/html/public
+      - ./Business/src:/var/www/html/src
+    build:
+      context: .
+      dockerfile: ./Business/Dockerfile
+    depends_on:
+      - acpdatos
+    ports:
+      - 9090:80
+
+volumes:
+  acpdb_data:
+
+secrets:
+  db_password:
+    file: ./db_password.txt
+

@@ -1,0 +1,82 @@
+@host = http://localhost:8080/api
+@uri = {{host}}/ordenes_trabajo
+
+### 1. CREATE - Crear orden de trabajo (201)
+# @name crear
+POST {{uri}}
+Content-Type: application/json
+
+{
+	"placa_vehiculo": "BCD-456",
+	"propietario": "María Fernández Rojas",
+	"descripcion_falla": "Ruido en la suspensión delantera al frenar",
+	"costo_estimado": 85000.50
+}
+
+### 1b. CREATE - Crear orden con estado explícito (201)
+POST {{uri}}
+Content-Type: application/json
+
+{
+	"placa_vehiculo": "ABC123",
+	"propietario": "José Ramírez Solano",
+	"descripcion_falla": "Cambio de aceite y revisión de frenos",
+	"costo_estimado": 45000,
+	"estado": "En Proceso"
+}
+
+### 2. READ - Obtener todas las órdenes (200)
+GET {{uri}}
+
+### 3. READ - Obtener orden por ID (200)
+GET {{uri}}/{{crear.response.body.$.data.id}}
+
+### 4. UPDATE - Actualizar orden (200)
+PUT {{uri}}/{{crear.response.body.$.data.id}}
+Content-Type: application/json
+
+{
+	"estado": "Finalizado",
+	"costo_estimado": 92000
+}
+
+### 5. DELETE - Eliminar orden (204)
+DELETE {{uri}}/{{crear.response.body.$.data.id}}
+
+### ---- Casos de error (capa de Datos) ----
+
+### 404 - Orden eliminada / inexistente en READ
+GET {{uri}}/{{crear.response.body.$.data.id}}
+
+### 404 - Orden inexistente en UPDATE
+PUT {{uri}}/9999
+Content-Type: application/json
+
+{
+	"estado": "Entregado"
+}
+
+### 404 - Orden inexistente en DELETE
+DELETE {{uri}}/9999
+
+### 409 - Estado fuera del ENUM (MySQL rechaza el valor)
+POST {{uri}}
+Content-Type: application/json
+
+{
+	"placa_vehiculo": "XYZ789",
+	"propietario": "Ana Vargas Mora",
+	"descripcion_falla": "Falla en el sistema eléctrico",
+	"costo_estimado": 30000,
+	"estado": "Cancelado"
+}
+
+### 409 - Falta un campo NOT NULL (placa_vehiculo)
+POST {{uri}}
+Content-Type: application/json
+
+{
+	"propietario": "Ana Vargas Mora",
+	"descripcion_falla": "Falla en el sistema eléctrico",
+	"costo_estimado": 30000
+}
